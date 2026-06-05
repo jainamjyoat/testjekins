@@ -1,0 +1,96 @@
+pipeline {
+
+    agent any
+
+    environment {
+
+        IMAGE_NAME = "jenkins-app"
+
+    }
+
+    stages {
+
+        stage('Checkout') {
+
+            steps {
+
+                echo 'Checking out source code'
+
+                checkout scm
+
+            }
+        }
+
+        stage('Build') {
+
+            steps {
+
+                echo 'Compiling Project'
+
+                sh 'mvn clean compile'
+
+            }
+        }
+
+        stage('Package') {
+
+            steps {
+
+                echo 'Packaging Project'
+
+                sh 'mvn package'
+
+            }
+        }
+
+        stage('Archive Artifact') {
+
+            steps {
+
+                archiveArtifacts artifacts: 'target/*.jar'
+
+            }
+        }
+
+        stage('Docker Build') {
+
+            steps {
+
+                sh 'docker build -t jenkins-app .'
+
+            }
+        }
+
+        stage('Run Container') {
+
+            steps {
+
+                sh '''
+                docker rm -f jenkins-container || true
+                docker run -d --name jenkins-container jenkins-app
+                '''
+            }
+        }
+    }
+
+    post {
+
+        success {
+
+            echo 'Pipeline Executed Successfully'
+
+        }
+
+        failure {
+
+            echo 'Pipeline Failed'
+
+        }
+
+        always {
+
+            echo 'Pipeline Finished'
+
+        }
+    }
+}
